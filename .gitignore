@@ -1,2 +1,5 @@
 datasets/
 ecg-image-kit/
+build/
+__pycache__/
+*.pyc

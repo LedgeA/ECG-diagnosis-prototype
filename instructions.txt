@@ -1,0 +1,6 @@
+I'd like to clarify that the environmental noise I'm referring to is not to the wave itself, but rather on the printed paper. Add environmental noise to the rendered image such as creasing, tilting, lighting. Just make sure that these environmental noises would not be bad enough that it's impossible to see the ECG lines themselves.
+
+Also, the metadata are too close to the corner of the images. Get it slightly farther.
+
+You can use the image attached as a reference for changing the grid color.
+
