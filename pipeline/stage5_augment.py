@@ -34,6 +34,7 @@ import numpy as np
 from PIL import Image
 
 import config as C
+import geometry
 
 
 @lru_cache(maxsize=1)
@@ -205,19 +206,16 @@ def augment(src: Path, dst: Path, seed_parts: tuple) -> None:
     fill = tuple(int(v) for v in _paper_colour(arr0))
 
     # --- geometry: tilt, then perspective -------------------------------
-    img = _rotate_on_paper(img, float(rng.uniform(-3.0, 3.0)), fill)
+    # The draws live in geometry.py so `annotate_augmented.py` can replay them
+    # and carry the kit's annotation boxes onto the augmented sheet. Do not
+    # inline them again here: two copies of this order would silently diverge,
+    # and the corpus is only reproducible while the stream is consumed in
+    # exactly this sequence.
+    geom = geometry.geometry_draws(rng, img.size, C.MARGIN_PX)
 
-    if rng.random() < 0.7:                       # keystone, as if photographed
-        w, h = img.size
-        m = rng.uniform(0.004, 0.018)
-        dx, dy = m * w, m * h
-        quad = (
-            rng.uniform(0, dx), rng.uniform(0, dy),
-            rng.uniform(0, dx), h - rng.uniform(0, dy),
-            w - rng.uniform(0, dx), h - rng.uniform(0, dy),
-            w - rng.uniform(0, dx), rng.uniform(0, dy),
-        )
-        img = img.transform((w, h), Image.QUAD, quad,
+    img = _rotate_on_paper(img, geom.degrees, fill)
+    if geom.quad is not None:                    # keystone, as if photographed
+        img = img.transform(img.size, Image.QUAD, geom.quad,
                             resample=Image.BICUBIC, fillcolor=fill)
 
     # --- paper: texture, then sharp folds, then lighting -----------------

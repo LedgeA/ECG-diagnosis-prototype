@@ -108,13 +108,20 @@ Each of these cost real debugging time. Don't redo it.
   paper only carries 147.6 px/s, so image Nyquist is 73.8 Hz. 150 Hz literally
   cannot be represented at any DPI this corpus renders at and would only alias
   against the 1 mm grid. Full derivation in README.
-- **Annotation JSON only applies to the clean render, never the final image.**
-  Stage 5's rotation/keystone/shading/margin move every pixel without
-  updating the sidecar JSON `--store_config` writes. `visualize_annotations.py`
-  checks image dimensions against the JSON's recorded width/height and refuses
-  to draw on a mismatch, rather than silently drawing a wrong box. If you write
-  any new tooling that reads these JSONs, point it at `build/rendered/`, never
-  `build/images/`.
+- **The kit's annotation JSON applies to the clean render only — but the boxes
+  are now transferable.** Stage 5's rotation/keystone/shading/margin move every
+  pixel without updating the sidecar JSON `--store_config` writes, so the kit's
+  own JSON in `build/rendered/` is valid *only* there;
+  `visualize_annotations.py` checks dimensions and refuses to draw on a
+  mismatch rather than drawing a wrong box.
+  `annotate_augmented.py` closes the gap: stage 5's RNG is keyed only by
+  `(record, render_k)` and `SEED`, and the geometry draws are consumed before
+  any photometric draw, so the exact tilt and keystone of an already-built
+  image can be replayed from its name and the boxes carried onto the JPEG.
+  Output goes to `build/annotations/<split>/<cls>/<record>_r<k>.json`, sized
+  for the augmented image. Verified end-to-end: mapped `plotted_pixels` land
+  on ink (mean grey ~46, ~90% below the ink threshold) where ignoring the
+  geometry lands on blank paper (~195, indistinguishable from random).
 - **Never write into `build/rendered/<class>/r<k>/<chunk>/`.**
   `stage4_render.py`'s resume logic counts `*.png` files in each chunk
   directory against the `.dat` count in the matching staged chunk to decide
@@ -142,8 +149,13 @@ install.sh                      environment setup (root)
 visualize_annotations.py        annotation QA tool (root, faithful port of
                                  code-from-other-project's script + two
                                  correctness fixes - see its own docstring)
+annotate_augmented.py           replays stage5's geometry to carry the kit's
+                                 boxes onto the augmented JPEGs (root)
+tests/test_geometry.py          pins the geometry replay against real PIL
+                                 output and freezes the RNG draw order
 pipeline/
   config.py                     every tunable; read this first for "why is X"
+  geometry.py                   stage5's tilt/keystone/margin, as a mapping
   patch_kit.py                  the one required ecg-image-kit source patch
   stage1_manifest.py            label resolution + corruption screening
   stage2_select.py              subsample + patient-grouped 80/10/10 split

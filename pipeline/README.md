@@ -59,6 +59,21 @@ build/index.csv     image_path, record, uid, cls, split, source, render_k, ...
 
 Class counts: 5,692 STEMI / 6,000 each LVH, AF, NORMAL from 9,423 records.
 
+Optionally, spatial annotations valid for those JPEGs:
+
+```bash
+python ../annotate_augmented.py          # -> build/annotations/<split>/<class>/*.json
+```
+
+The kit only annotates the clean render, and stage 5 then moves every pixel.
+`annotate_augmented.py` replays stage 5's geometry — deterministic, keyed on
+`(record, render_k)` — and carries the lead and text boxes onto the augmented
+sheet, so they can be recovered for a corpus that is already built without
+re-rendering anything. Boxes come out as quadrilaterals (the sheet is tilted
+and keystoned); each also carries a derived `*_aabb` upright rectangle. Not
+needed to train a whole-image classifier, which takes its label from
+`index.csv`.
+
 ## Decisions worth knowing
 
 **Only the four target classes are ever rendered.** Stage 1 assigns every record

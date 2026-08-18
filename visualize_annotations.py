@@ -9,12 +9,24 @@ Ported from code-from-other-project/visualize_ecg_annotations.py for this
 project's layout: images and their JSON sidecars live under
 build/rendered/<class>/r<k>/<chunk>/<record>-0.{png,json}.
 
-IMPORTANT: point this at build/rendered/, not build/images/. The pipeline's
-stage5 rotates, keystones, shades and pads every sheet on its way from
-build/rendered/ to build/images/ without touching the JSON, so a box that is
-correct on the clean render is wrong on the final image. This script checks
-the image dimensions against the JSON's recorded width/height and refuses to
-draw if they disagree, rather than silently drawing a misplaced box.
+The kit's own JSON describes the clean render only: stage5 rotates, keystones,
+shades and pads every sheet on its way from build/rendered/ to build/images/
+without touching it, so a box that is correct on the clean render is wrong on
+the final image. This script checks the image dimensions against the JSON's
+recorded width/height and refuses to draw if they disagree, rather than
+silently drawing a misplaced box.
+
+To annotate a *final* image, use the sidecars written by annotate_augmented.py,
+which replay stage5's geometry and carry the boxes onto the augmented sheet:
+
+    python annotate_augmented.py
+    python visualize_annotations.py \
+        -i build/images/train/AF/ECG004424_r0.jpg \
+        -j build/annotations/train/AF/ECG004424_r0.json \
+        -o build/annotated/ECG004424_r0.png
+
+Those boxes are quadrilaterals, not rectangles - the sheet is tilted and
+keystoned - which draw_polygon already handles.
 """
 
 import os
