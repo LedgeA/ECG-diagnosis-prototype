@@ -59,8 +59,8 @@ printout accumulates, not noise on the waveform:
 
 | Effect | Range |
 |---|---|
-| Paper texture | photographs of real wrinkled paper, as a shading field (85% of sheets) |
-| Creasing | 1–3 hard fold lines with a bright ridge and shadow side, plus broad bowing (65%) |
+| Paper texture | photographs of real wrinkled paper, as a shading field (every sheet) |
+| Creasing | 1–3 hard fold lines with a bright ridge and shadow side, plus broad bowing (80%) |
 | Tilt | ±3°, rotated on an expanded canvas filled with the sheet's own paper colour |
 | Perspective | slight keystone, as if photographed rather than scanned (70%) |
 | Lighting | directional ramp, corner falloff, and an off-sheet edge shadow |
@@ -75,9 +75,9 @@ crumpled paper physically does to reflected light, and it keeps the darkest fold
 far above the trace. Texture, hard creases and lighting are layered in that
 order, because real paper shows all three.
 
-All of it is bounded so the trace survives. Across a 20-variant sweep, paper-to-
-trace contrast stayed between **226 and 247** of a clean sheet's 250 greyscale
-levels, and ink coverage between 1.10% and 2.59% against a clean 1.31%. Stage 6
+All of it is bounded so the trace survives. Across a 48-variant sweep, paper-to-
+trace contrast stayed between **230 and 252** of a clean sheet's 250 greyscale
+levels, and ink coverage between 1.14% and 3.68% against a clean 1.31%. Stage 6
 re-checks this on the built corpus.
 
 Per class: 5,692 STEMI and 6,000 each of LVH, AF, NORMAL. Split 80/10/10,
@@ -117,6 +117,26 @@ interrupted build resumes with `./run_all.sh <n>`.
 | 6 | `stage6_verify.py` | Integrity, balance, pixel stats, source-leakage probe |
 
 Every tunable lives in `pipeline/config.py`.
+
+**Checking a render's annotations.** `visualize_annotations.py`, at the repo
+root, draws each lead's bounding box, name-label box, and (with
+`--show_pixels`) its traced signal pixels, reading the JSON sidecar
+`--store_config 1` writes next to every clean render:
+
+```bash
+python visualize_annotations.py -i build/rendered/STEMI/r0/c000/ECG000001-0.png
+python visualize_annotations.py -i build/rendered/STEMI/r0/c000/ECG000001-0.png --show_pixels
+```
+
+This only works against `build/rendered/` — stage 5's rotation, keystone,
+shading and margin move every pixel without touching the JSON, so a box that's
+correct there is wrong on the final `build/images/` JPEGs. The script checks
+the image's dimensions against what the JSON recorded and refuses to draw on a
+mismatch, rather than silently drawing a plausible but wrong box. Output
+defaults next to the input image; if that would land inside `build/rendered/`
+it redirects to `build/annotated/` instead, since stage 4's resume logic counts
+PNGs per chunk directory to decide what's already done, and a stray file there
+would throw that off.
 
 **Only the four target classes are ever rendered.** Stage 1 discards everything
 else — roughly 21,000 of ~31,000 candidates are never transcoded or stored.

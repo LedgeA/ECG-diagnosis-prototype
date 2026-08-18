@@ -94,17 +94,17 @@ def _illumination(arr: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
     ang = rng.uniform(0, 2 * np.pi)
     ramp = (np.cos(ang) * (xx / w - 0.5) + np.sin(ang) * (yy / h - 0.5))
-    field = 1.0 + rng.uniform(0.06, 0.16) * ramp * 2.0
+    field = 1.0 + rng.uniform(0.10, 0.22) * ramp * 2.0
 
     r = np.sqrt((xx / w - 0.5) ** 2 + (yy / h - 0.5) ** 2)
-    field *= 1.0 - rng.uniform(0.04, 0.14) * (r / r.max()) ** 2
+    field *= 1.0 - rng.uniform(0.06, 0.18) * (r / r.max()) ** 2
 
     # A soft off-sheet shadow along one edge, as when paper is photographed
     # on a desk rather than scanned flat.
-    if rng.random() < 0.5:
+    if rng.random() < 0.65:
         edge = rng.integers(0, 4)
         d = {0: xx / w, 1: 1 - xx / w, 2: yy / h, 3: 1 - yy / h}[int(edge)]
-        field *= 1.0 - rng.uniform(0.08, 0.20) * np.exp(-d / rng.uniform(0.04, 0.12))
+        field *= 1.0 - rng.uniform(0.10, 0.26) * np.exp(-d / rng.uniform(0.04, 0.12))
     return arr * field[..., None]
 
 
@@ -146,9 +146,9 @@ def _paper_texture(arr: np.ndarray, rng: np.random.Generator) -> np.ndarray:
     if mean <= 1e-3:
         return arr
 
-    strength = rng.uniform(0.45, 0.85)
+    strength = rng.uniform(0.65, 1.05)
     field = 1.0 + (field / mean - 1.0) * strength
-    return arr * np.clip(field, 0.78, 1.14)[..., None]
+    return arr * np.clip(field, 0.72, 1.18)[..., None]
 
 
 def _creases(arr: np.ndarray, rng: np.random.Generator) -> np.ndarray:
@@ -222,11 +222,12 @@ def augment(src: Path, dst: Path, seed_parts: tuple) -> None:
 
     # --- paper: texture, then sharp folds, then lighting -----------------
     # Real crumpled paper shows both: a diffuse wrinkle field over the whole
-    # sheet, and a few hard fold lines where it was actually creased.
+    # sheet, and a few hard fold lines where it was actually creased. Texture
+    # is unconditional - a photographed sheet is never perfectly flat, and a
+    # skip probability here is what let some renders come out looking clean.
     arr = np.asarray(img, dtype=np.float32)
-    if rng.random() < 0.85:
-        arr = _paper_texture(arr, rng)
-    if rng.random() < 0.65:
+    arr = _paper_texture(arr, rng)
+    if rng.random() < 0.80:
         arr = _creases(arr, rng)
     arr = _illumination(arr, rng)
     arr = _colour_cast(arr, rng)
